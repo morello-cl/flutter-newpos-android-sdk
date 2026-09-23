@@ -4,6 +4,13 @@
 /// magnética (3 tracks) y tarjetas de contacto / PSAM.
 ///
 /// Solo funciona en un terminal Newpos cuyo firmware provea `com.pos.device`.
+///
+/// En cualquier otro hardware el plugin es inocuo pero **falla en silencio**:
+/// la init lazy no encuentra el SDK y cada llamada devuelve null / false /
+/// lista vacia en lugar de lanzar. Un equipo sin impresion ni lector, con la
+/// app funcionando normal, casi siempre es el APK de otro flavor instalado en
+/// el terminal equivocado. Verificarlo con `Newpos.device.info()`: si devuelve
+/// solo `brand` y el resto en null, el SDK no esta respondiendo.
 library;
 
 import 'src/newpos_device.dart';
