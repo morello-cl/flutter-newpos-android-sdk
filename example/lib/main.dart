@@ -116,6 +116,17 @@ class _HomePageState extends State<HomePage> {
                 }),
                 child: const Text('Leer banda'),
               ),
+              // ponytail: muestra el track EN CLARO (PAN incluido). Solo para
+              // certificar la conversion a tarjeta logica con TARJETA DE PRUEBA.
+              // No loguea ni persiste. Borrar este boton cuando cierre Socoepa.
+              FilledButton(
+                onPressed: () => _run('Banda cruda', () async {
+                  final t = await Newpos.magcard.readTracks();
+                  if (t == null) return 'sin lectura';
+                  return 'T1=${t.track1}\nT2=${t.track2}\nT3=${t.track3}';
+                }),
+                child: const Text('Banda cruda (tarjeta de prueba)'),
+              ),
               FilledButton(
                 onPressed: () => _run('PSAM1', () async {
                   final ok = await Newpos.icc.connect(IccSlot.psam1);
