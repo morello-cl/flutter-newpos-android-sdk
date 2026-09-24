@@ -33,7 +33,10 @@ class NewposMagcard(private val context: Context) {
         val latch = CountDownLatch(1)
         val result = AtomicReference<Map<String, Any?>?>(null)
         return try {
-            reader.startSearchCard(timeoutSeconds, MagCardCallback { code, card ->
+            // startSearchCard espera MILISEGUNDOS, no segundos. Pasarle 30 hacia
+            // que el lector escuchara 30 ms y devolviera TIMEOUT_ERROR (2) antes
+            // de que nadie alcanzara a deslizar la tarjeta.
+            reader.startSearchCard(timeoutSeconds * 1000, MagCardCallback { code, card ->
                 if (code == MagCardCallback.SUCCESS && card != null) {
                     result.set(cardToMap(card))
                 } else {
