@@ -11,6 +11,80 @@ y el versionado sigue [SemVer](https://semver.org/lang/es/).
 > [«SDK del fabricante»](README.md#sdk-del-fabricante-requerido-para-compilar)
 > y [`android/libs/README.md`](android/libs/README.md).
 
+## [1.1.0]
+
+Primera versión validada **contra un terminal físico**. Todo lo que aquí se
+corrige estaba escrito contra la documentación del SDK y se rompía en el
+equipo real; nada de esto era visible por compilación ni por tests.
+
+### Corregido
+
+- **`magcard.readTracks()` nunca alcanzaba a leer.**
+  `MagCardReader.startSearchCard(int, callback)` recibe el timeout en
+  **milisegundos**, no en segundos. El plugin le pasaba el valor en segundos
+  tal cual, así que un `readTracks(timeout: 30s)` dejaba el lector escuchando
+  30 ms y devolvía `TIMEOUT_ERROR` antes de que nadie pudiera deslizar la
+  tarjeta. El síntoma era «sin lectura» instantáneo, indistinguible de un
+  lector averiado o de un equipo sin banda magnética.
+
+- **`device.hasModule()` devolvía `false` para todos los módulos.** Dos causas:
+  las constantes `module*` eran nombres inventados (`BAR_SCANNER`,
+  `MAGCARD_READER`, `ICC_READER`…) que no existen en el equipo — el firmware
+  los reporta en minúscula (`barscanner`, `msr`, `ic`, `sam`, `nfc`,
+  `printer`) — y la implementación resolvía con `DevConfig.getModuleByName()`,
+  que exige el casing exacto del enum y devuelve `null` ante cualquier
+  diferencia. Ahora se resuelve contra `modules()` comparando sin distinguir
+  mayúsculas, así que deja de depender del casing de cada firmware.
+
+  Impacto aguas abajo: cualquier consumidor que condicionara una función a
+  `hasModule(...)` tomaba la rama de «no disponible» en un equipo que sí trae
+  el hardware. En DTEx esto dejaba el lector de códigos inutilizable en todo
+  Newpos 9830, mostrando «este equipo no tiene lector» con el lector puesto.
+
+### Cambiado
+
+- **Valores de las constantes `NewposDevice.module*`.** Pasan a los nombres
+  reales que reporta el equipo. Quien use las constantes no necesita hacer
+  nada; quien hubiera escrito los literales a mano debe actualizarlos.
+
+### Documentado
+
+Todo verificado en un Newpos 9830 real, no deducido:
+
+- **El firmware reporta el modelo `NEW9810`, no `9830`.** El número comercial
+  no aparece en ningún campo del SDK. Se anotan los literales en el dartdoc de
+  `device.info()` para que ninguna conciliación contra un registro externo se
+  escriba por igualdad ni por similitud de cadenas.
+- **El equipo expone dos números de serie distintos.** `DevConfig.getSN()`
+  (el que entrega el plugin) y `ro.serialno` de Android no coinciden.
+- **`hasModule()` devuelve `false` por dos motivos distintos** — el equipo no
+  trae el módulo, o el SDK no respondió — y eso ya causó un mensaje falso al
+  operador. Se documenta cómo separar ambos casos con `modules()`, que
+  devuelve lista vacía exactamente cuando el SDK no responde, sin API nueva.
+- **En hardware no-Newpos el plugin falla en silencio.** La init lazy no
+  encuentra el SDK y cada llamada devuelve `null` / `false` / lista vacía en
+  vez de lanzar. Un equipo sin impresión ni lector con la app aparentemente
+  sana suele ser el APK de otro flavor instalado en el terminal equivocado.
+- **El timeout de `Scanner.startScan` no se comporta como se pide.** Medido
+  con `scanOnce(30)`: devuelve a los 9 s, ni los 30 ms que daría leerlo como
+  milisegundos ni los 30 s solicitados. **No se toca**: no falla en la
+  práctica y no hay evidencia de hacia dónde corregirlo.
+
+### Añadido
+
+- **Ejemplo: botón «Banda cruda (tarjeta de prueba)»**, que muestra los tres
+  tracks completos en pantalla para certificar la conversión a tarjeta lógica
+  de la pasarela. Muestra el PAN **en claro**: es solo para tarjetas de prueba,
+  no registra ni persiste nada, y vive únicamente en la app de ejemplo — nunca
+  en el plugin ni en una app de producción.
+
+### Verificado en terminal físico
+
+Impresión (ticket legible), datos de equipo, módulos, `hasModule()` y lectura
+de banda magnética. El scanner responde pero no se probó con un código real.
+La conexión a PSAM falla con `SDKException: errno=62`, pendiente de confirmar
+si el slot tiene una tarjeta SAM instalada.
+
 ## [1.0.0]
 
 Primera versión estable. Consolida todo el trabajo posterior al release inicial
