@@ -25,6 +25,21 @@ class NewposDevice {
   static const String localePortuguese = 'pt-BR'; // Brasil
 
   /// Ficha del equipo (serie, modelo, versiones, IMEI).
+  ///
+  /// Valores reales capturados en un Newpos 9830 (2026-09-24), porque no son
+  /// los que uno esperaria y ya causaron confusion aguas arriba:
+  ///
+  /// - `model` (`DevConfig.getMachine()`) devuelve **`NEW9810`**, no `9830`.
+  ///   El "9830" del nombre comercial no aparece por ningun lado en el SDK;
+  ///   Android si usa NEW9830 en `ro.product.device` / `ro.product.name`,
+  ///   pero su `ro.product.model` tambien dice NEW9810.
+  /// - `serialNumber` (`DevConfig.getSN()`) devuelve la serie de transporte
+  ///   (ej. `H3R000700052135`), que **no** es `ro.serialno` del sistema
+  ///   (ej. `9810250930644607`). Son dos series distintas en el mismo equipo.
+  ///
+  /// Al comparar contra un registro externo, usar estos valores literales:
+  /// no derivarlos del nombre comercial ni asumir que coinciden con las
+  /// propiedades de Android.
   Future<DeviceInfo> info() async {
     final m = await newposChannel.invokeMethod<Map<dynamic, dynamic>>('device.info');
     return DeviceInfo.fromMap(m ?? const {});
