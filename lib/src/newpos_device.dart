@@ -59,6 +59,26 @@ class NewposDevice {
   }
 
   /// true si el terminal declara el módulo (usar las constantes `module*`).
+  ///
+  /// Devuelve `false` en dos situaciones distintas: el equipo no trae ese
+  /// hardware, o el SDK no respondio. **No uses este metodo solo como guarda
+  /// dura** —lanzar "este equipo no tiene lector" a partir de un false— porque
+  /// en el segundo caso le afirmas al operador algo falso sobre su hardware y
+  /// no hay forma de distinguirlo desde la app.
+  ///
+  /// Para separar los dos casos basta [modules], sin API extra: si devuelve
+  /// una lista vacia, el SDK no esta respondiendo y no se sabe nada del
+  /// equipo; si trae elementos y el modulo no esta entre ellos, el equipo
+  /// realmente no lo tiene.
+  ///
+  /// ```dart
+  /// final mods = await Newpos.device.modules();
+  /// if (mods.isEmpty) {
+  ///   // SDK caido o APK de otro flavor: degradar, no afirmar.
+  /// } else if (!mods.contains(NewposDevice.moduleScanner)) {
+  ///   // El equipo de verdad no trae lector.
+  /// }
+  /// ```
   Future<bool> hasModule(String name) async {
     return await newposChannel.invokeMethod<bool>('device.hasModule', {'name': name}) ?? false;
   }
