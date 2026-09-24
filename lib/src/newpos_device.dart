@@ -5,13 +5,17 @@ import 'models.dart';
 class NewposDevice {
   const NewposDevice();
 
-  /// Constantes de módulo de `com.pos.device.config.DevConfig` (para [hasModule]).
-  static const String modulePrinter = 'PRINTER';
-  static const String moduleScanner = 'BAR_SCANNER';
-  static const String moduleMagcard = 'MAGCARD_READER';
-  static const String moduleIcc = 'ICC_READER';
-  static const String modulePicc = 'PICC_READER';
-  static const String moduleSam = 'SAM_SLOT';
+  /// Nombres de modulo tal como los reporta [modules] en el 9830, para [hasModule].
+  ///
+  /// Verificados contra un equipo real (2026-09-24): el firmware los entrega en
+  /// minuscula. Los nombres estilo `BAR_SCANNER` que uno esperaria del SDK no
+  /// existen, y con ellos [hasModule] devolvia false para todo.
+  static const String modulePrinter = 'printer';
+  static const String moduleScanner = 'barscanner';
+  static const String moduleMagcard = 'msr';
+  static const String moduleIcc = 'ic';
+  static const String modulePicc = 'nfc';
+  static const String moduleSam = 'sam';
 
   /// Tags de idioma (BCP-47) de los idiomas que maneja DTEx, para [setLocale].
   ///
