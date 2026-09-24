@@ -5,13 +5,17 @@ import 'models.dart';
 class NewposDevice {
   const NewposDevice();
 
-  /// Constantes de módulo de `com.pos.device.config.DevConfig` (para [hasModule]).
-  static const String modulePrinter = 'PRINTER';
-  static const String moduleScanner = 'BAR_SCANNER';
-  static const String moduleMagcard = 'MAGCARD_READER';
-  static const String moduleIcc = 'ICC_READER';
-  static const String modulePicc = 'PICC_READER';
-  static const String moduleSam = 'SAM_SLOT';
+  /// Nombres de modulo tal como los reporta [modules] en el 9830, para [hasModule].
+  ///
+  /// Verificados contra un equipo real (2026-09-24): el firmware los entrega en
+  /// minuscula. Los nombres estilo `BAR_SCANNER` que uno esperaria del SDK no
+  /// existen, y con ellos [hasModule] devolvia false para todo.
+  static const String modulePrinter = 'printer';
+  static const String moduleScanner = 'barscanner';
+  static const String moduleMagcard = 'msr';
+  static const String moduleIcc = 'ic';
+  static const String modulePicc = 'nfc';
+  static const String moduleSam = 'sam';
 
   /// Tags de idioma (BCP-47) de los idiomas que maneja DTEx, para [setLocale].
   ///
@@ -25,6 +29,21 @@ class NewposDevice {
   static const String localePortuguese = 'pt-BR'; // Brasil
 
   /// Ficha del equipo (serie, modelo, versiones, IMEI).
+  ///
+  /// Valores reales capturados en un Newpos 9830 (2026-09-24), porque no son
+  /// los que uno esperaria y ya causaron confusion aguas arriba:
+  ///
+  /// - `model` (`DevConfig.getMachine()`) devuelve **`NEW9810`**, no `9830`.
+  ///   El "9830" del nombre comercial no aparece por ningun lado en el SDK;
+  ///   Android si usa NEW9830 en `ro.product.device` / `ro.product.name`,
+  ///   pero su `ro.product.model` tambien dice NEW9810.
+  /// - `serialNumber` (`DevConfig.getSN()`) devuelve la serie de transporte
+  ///   (ej. `H3R000700052135`), que **no** es `ro.serialno` del sistema
+  ///   (ej. `9810250930644607`). Son dos series distintas en el mismo equipo.
+  ///
+  /// Al comparar contra un registro externo, usar estos valores literales:
+  /// no derivarlos del nombre comercial ni asumir que coinciden con las
+  /// propiedades de Android.
   Future<DeviceInfo> info() async {
     final m = await newposChannel.invokeMethod<Map<dynamic, dynamic>>('device.info');
     return DeviceInfo.fromMap(m ?? const {});
@@ -40,6 +59,26 @@ class NewposDevice {
   }
 
   /// true si el terminal declara el módulo (usar las constantes `module*`).
+  ///
+  /// Devuelve `false` en dos situaciones distintas: el equipo no trae ese
+  /// hardware, o el SDK no respondio. **No uses este metodo solo como guarda
+  /// dura** —lanzar "este equipo no tiene lector" a partir de un false— porque
+  /// en el segundo caso le afirmas al operador algo falso sobre su hardware y
+  /// no hay forma de distinguirlo desde la app.
+  ///
+  /// Para separar los dos casos basta [modules], sin API extra: si devuelve
+  /// una lista vacia, el SDK no esta respondiendo y no se sabe nada del
+  /// equipo; si trae elementos y el modulo no esta entre ellos, el equipo
+  /// realmente no lo tiene.
+  ///
+  /// ```dart
+  /// final mods = await Newpos.device.modules();
+  /// if (mods.isEmpty) {
+  ///   // SDK caido o APK de otro flavor: degradar, no afirmar.
+  /// } else if (!mods.contains(NewposDevice.moduleScanner)) {
+  ///   // El equipo de verdad no trae lector.
+  /// }
+  /// ```
   Future<bool> hasModule(String name) async {
     return await newposChannel.invokeMethod<bool>('device.hasModule', {'name': name}) ?? false;
   }

@@ -34,7 +34,7 @@ class NewposDevice(private val context: Context) {
         }
     }
 
-    /** Nombres de los módulos de hardware presentes (PRINTER, BAR_SCANNER, ICC_READER…). */
+    /** Nombres de los módulos de hardware presentes (msr, printer, barscanner, ic, sam…). */
     fun modules(): List<String> {
         if (!NewposSdk.ensureReady(context)) return emptyList()
         return try {
@@ -45,10 +45,17 @@ class NewposDevice(private val context: Context) {
         }
     }
 
-    /** true si el terminal declara el módulo (ej. DevConfig.BAR_SCANNER). */
+    /**
+     * true si el terminal declara el módulo (usar las constantes `module*` de Dart).
+     *
+     * Se resuelve contra [modules] y no con `DevConfig.getModuleByName`, que exige
+     * el nombre con el casing exacto del enum y devolvía null para todo. El 9830
+     * reporta los módulos en minúscula (`msr`, `barscanner`, `ic`), así que aquí
+     * se compara sin distinguir mayúsculas.
+     */
     fun hasModule(name: String): Boolean {
         if (!NewposSdk.ensureReady(context)) return false
-        return runCatching { DevConfig.getModuleByName(name) != null }.getOrDefault(false)
+        return modules().any { it.equals(name, ignoreCase = true) }
     }
 
     /** Idiomas que el firmware declara soportar (tags BCP-47, ej. "en-US", "zh-TW"). */

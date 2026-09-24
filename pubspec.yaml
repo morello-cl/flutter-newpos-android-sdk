@@ -1,6 +1,6 @@
 name: flutter_newpos_android_sdk
 description: "Plugin Flutter para el terminal POS Newpos 9830 (SDK com.pos.device.*): impresión, datos del equipo, scanner, banda magnética y PSAM."
-version: 1.0.0
+version: 1.1.0
 homepage: https://github.com/morello-cl/flutter-newpos-android-sdk
 repository: https://github.com/morello-cl/flutter-newpos-android-sdk
 
