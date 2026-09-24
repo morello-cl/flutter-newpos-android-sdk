@@ -24,7 +24,18 @@ class NewposScanner(private val context: Context) {
         private const val TAG = "NewposScanner"
     }
 
-    /** Escanea un código con timeout. Devuelve el texto decodificado o null. */
+    /**
+     * Escanea un código con timeout. Devuelve el texto decodificado o null.
+     *
+     * ponytail: la unidad del timeout de `Scanner.startScan(int, listener)` sigue
+     * sin confirmarse. Medido en un 9830 real (2026-09-24) con `scanOnce(30)` y
+     * sin presentar codigo: devolvio `code=-1` a los 9 s, o sea ni los 30 ms que
+     * daria interpretar el valor como milisegundos (el bug que si tenia magcard,
+     * ver NewposMagcard) ni los 30 s que pidio el llamador. Se deja como esta:
+     * no falla en la practica y no hay evidencia de que convertir mejore nada.
+     * Para cerrarlo hace falta medir con un codigo de barras real y varios
+     * timeouts distintos; el SDK tampoco documenta que significa -1.
+     */
     fun scanOnce(timeoutSeconds: Int): String? {
         if (!NewposSdk.ensureReady(context)) return null
         val scanner = Scanner.getInstance()
